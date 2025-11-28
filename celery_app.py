@@ -1,8 +1,15 @@
+import logging
+
+import pytz
 from celery import Celery
 from celery.schedules import crontab
 import os
 import urllib.parse
+
+
 from configs import config
+
+logger = logging.getLogger(__name__)
 
 # Broker 地址可通过环境变量 CELERY_BROKER_URL 覆盖（默认使用本地 Redis）
 # 支持可选的 REDIS_USERNAME / REDIS_PASSWORD / REDIS_USE_SSL（来自 config 或环境变量）
@@ -22,23 +29,33 @@ else:
 
 scheme = "redis"
 
-BROKER_URL = os.getenv("CELERY_BROKER_URL", f"{scheme}://{auth_part}{config.REDIS_HOST}:{config.REDIS_PORT}/0")
+BROKER_URL = f"{scheme}://{auth_part}{config.REDIS_HOST}:{config.REDIS_PORT}/0"
+BACKEND_URL = "redis"
 
-app = Celery("blog_syncer", broker=BROKER_URL)
+celery_app = Celery(config.APP_NAME, broker=BROKER_URL, backend=BACKEND_URL)
 
-# 时区设置（按照本地需求调整）
-app.conf.timezone = "Asia/Shanghai"
-# 是否启用 UTC（如果启用则 crontab 按 UTC 调度）
-app.conf.enable_utc = False
+celery_app.conf.update(
+        worker_log_format=config.LOG_FORMAT,
+        worker_task_log_format=config.LOG_FORMAT,
+        timezone=pytz.timezone(config.LOG_TZ or "UTC"),
+        task_ignore_result=True,
+        worker_logfile=config.LOG_FILE,
+    )
 
 # 简单的 beat schedule：每天 01:00 执行任务
-app.conf.beat_schedule = {
-    "daily_print_time": {
+celery_app.conf.beat_schedule = {
+    "daily_blog_sync": {
         "task": "scheduled.scheduled_tasks.blog_sync",
-        "schedule": crontab(hour=1, minute=0),
-        "options": {"queue": "default"},
+        "schedule": crontab(minute="*/2"),  # 每 5 分钟执行一次
+    },
+    "print_time": {
+        "task": "scheduled.scheduled_tasks.print_time",
+        "schedule": crontab(minute="*/1"),  # 每 5 分钟执行一次
     },
 }
+celery_app.conf.update(
+    imports=["scheduled.scheduled_tasks"]
+)
 
 # 方便其他模块导入
-__all__ = ("app",)
+__all__ = ("celery_app",)

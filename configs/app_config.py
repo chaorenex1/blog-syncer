@@ -7,6 +7,7 @@ from pydantic_settings import SettingsConfigDict, BaseSettings, PydanticBaseSett
 from .cache.redis_config import RedisConfig
 from .db import DBConfig
 from .deploy import DeploymentConfig, AuthConfig, MCPConfig
+from .halo import HaloConfig
 from .logging import LoggingConfig
 from .remote import RemoteSettingsSource, RemoteSettingsSourceName, RemoteSettingsSourceConfig, DiscoveryConfig
 from .remote.base import NacosSettingsSource
@@ -59,7 +60,8 @@ class AduibAiConfig(
     DBConfig,
     RedisConfig,
     RemoteSettingsSourceConfig,
-    DiscoveryConfig
+    DiscoveryConfig,
+    HaloConfig
 ):
     model_config = SettingsConfigDict(
         # Use top level .env file (one level above ./aduib_ai/)
