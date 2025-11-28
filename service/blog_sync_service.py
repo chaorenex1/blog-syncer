@@ -102,14 +102,14 @@ class BlogSyncService:
         halo_client_ = get_halo_client()
         with get_db() as session:
             try:
-                blog_list:list[KnowledgeDocument] = session.query(KnowledgeDocument).filter_by(push_status=0,doc_from='web_memo').all()
+                blog_list:list[KnowledgeDocument] = session.query(KnowledgeDocument).filter_by(push_status=0,
+                                                                                               rag_status='completed',
+                                                                                               doc_from='web_memo').all()
                 for blog in blog_list:
                     # Simulate synchronization process
                     logger.info(f"Synchronizing blog: {blog.title}")
-                    if len(blog.title)==0:
-                        blog.title = blog.content[:20]  # Set a default title if empty
                     create_post(halo_client_,{
-                        "title": blog.title,
+                        "title": blog.title if len(blog.title)>=0 else blog.content[:20],
                         "content": blog.content,
                         "content_format": "MARKDOWN",
                         "tags": [],
