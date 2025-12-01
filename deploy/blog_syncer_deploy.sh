@@ -5,7 +5,6 @@ REPO_URL="https://github.com/chaorenex1/blog-syncer"
 BRANCH="main"
 CONTAINER_NAME="${PROJECT_NAME}-app"
 IMAGE_NAME="${PROJECT_NAME}"
-cd ".."
 WORK_DIR=$(pwd)
 
 LOG_HOST_DIR="${WORK_DIR}/logs"
@@ -27,21 +26,6 @@ err() { echo -e "${RED}[ERROR]${NC} $*"; }
 #trap 'err "部署失败"; exit 1' ERR
 
 log "开始部署 ${PROJECT_NAME}"
-
-# 克隆或更新代码
-if [ -d ".git" ]; then
-  log "仓库已存在，拉取远端 ${BRANCH}"
-  git fetch origin "${BRANCH}"
-  git checkout "${BRANCH}"
-  git reset --hard "origin/${BRANCH}"
-  git clean -fd
-else
-#  log "克隆仓库 ${REPO_URL}"
-#  rm -rf ./*
-#  git clone --branch "${BRANCH}" "${REPO_URL}" .
-  err "代码仓库不存在，请先克隆代码"
-  exit 1
-fi
 
 # 停止并删除旧容器（如果存在）
 if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
@@ -77,7 +61,7 @@ mkdir -p "${LOG_HOST_DIR}"
 # 运行新容器
 log "启动容器 ${CONTAINER_NAME}"
 docker run -d \
-  --env-file env \
+  --env-file .env \
   --name "${CONTAINER_NAME}" \
   --restart unless-stopped \
   -p "${PORT}:${EXPOSED_PORT}" \
