@@ -36,9 +36,11 @@ if [ -d ".git" ]; then
   git reset --hard "origin/${BRANCH}"
   git clean -fd
 else
-  log "克隆仓库 ${REPO_URL}"
-  rm -rf ./*
-  git clone --branch "${BRANCH}" "${REPO_URL}" .
+#  log "克隆仓库 ${REPO_URL}"
+#  rm -rf ./*
+#  git clone --branch "${BRANCH}" "${REPO_URL}" .
+  err "代码仓库不存在，请先克隆代码"
+  exit 1
 fi
 
 # 停止并删除旧容器（如果存在）
@@ -75,7 +77,7 @@ mkdir -p "${LOG_HOST_DIR}"
 # 运行新容器
 log "启动容器 ${CONTAINER_NAME}"
 docker run -d \
-  --env-file .env \
+  --env-file env \
   --name "${CONTAINER_NAME}" \
   --restart unless-stopped \
   -p "${PORT}:${EXPOSED_PORT}" \
