@@ -20,55 +20,6 @@ log() { echo "[INFO]    $*"; }
 warn() { echo "[WARN]    $*"; }
 err() { echo "[ERROR]   $*"; }
 
-# wait_for: host:port[,host2:port2]
-wait_for() {
-  if [ -z "${WAIT_FOR:-}" ]; then
-    return 0
-  fi
-  IFS=',' read -ra hosts <<< "$WAIT_FOR"
-  for h in "${hosts[@]}"; do
-    host=$(echo "$h" | cut -d: -f1)
-    port=$(echo "$h" | cut -s -d: -f2)
-    if [ -z "$port" ]; then
-      warn "WAIT_FOR entry '$h' missing port, skipping"
-      continue
-    fi
-    log "等待 $host:$port 可用..."
-    for i in {1..60}; do
-      if timeout 1 bash -c "</dev/tcp/$host/$port" 2>/dev/null; then
-        log "$host:$port 可用"
-        break
-      fi
-      sleep 1
-      if [ $i -eq 60 ]; then
-        err "$host:$port 超时（60s），继续启动可能失败"
-      fi
-    done
-  done
-}
-
-# run_migrations: if alembic is available, run upgrade head
-run_migrations() {
-  if [ "${MIGRATE:-false}" != "true" ]; then
-    return 0
-  fi
-  if [ -x "$VENV_PY" ]; then
-    if "$VENV_PY" -c "import importlib,sys
-try:
- importlib.import_module('alembic')
- print('ok')
-except Exception:
- sys.exit(2)" >/dev/null 2>&1; then
-      log "运行 alembic upgrade head"
-      "$VENV_PY" -m alembic upgrade head || warn "alembic 升级命令失败"
-    else
-      warn "容器内未安装 alembic，跳过迁移"
-    fi
-  else
-    warn "找不到虚拟环境 python: $VENV_PY，跳过迁移"
-  fi
-}
-
 start_web() {
   PORT=${APP_PORT:-5006}
   log "启动 web 服务 (uvicorn) 在 0.0.0.0:${PORT}"
@@ -137,12 +88,6 @@ trap term_handler SIGTERM SIGINT
 ROLE=${ROLE:-celery}
 log "容器启动，ROLE=$ROLE"
 
-# 等待依赖
-#wait_for
-
-# 运行迁移（如果需要）
-#run_migrations
-
 case "$ROLE" in
   web)
     start_web
@@ -153,20 +98,6 @@ case "$ROLE" in
   celery)
     # 启动 beat（后台）并启动 worker（前台等待）
     start_celery_beat
-    start_celery_worker
-    ;;
-  both)
-    # 启动 web 在后台，然后在前台运行 celery
-    PORT=${APP_PORT:-5006}
-    log "以 both 模式启动：web (后台) + celery (前台)"
-    if [ -x "$VENV_PY" ]; then
-      "$VENV_PY" -m uvicorn app:app --host 0.0.0.0 --port "$PORT" &
-    else
-      python -m uvicorn app:app --host 0.0.0.0 --port "$PORT" &
-    fi
-    child_pid=$!
-    # 让后台 web 有点时间启动
-    sleep 1
     start_celery_worker
     ;;
   *)
