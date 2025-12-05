@@ -1,15 +1,11 @@
 #!/usr/bin/env bash
 # 容器内启动脚本（已调整为默认启动 celery beat + worker）
 # 用法: 通过环境变量 ROLE 来选择要运行的进程：
-#   ROLE=web        -> 启动 uvicorn HTTP 服务
 #   ROLE=worker     -> 只启动 celery worker
 #   ROLE=celery     -> 启动 celery beat（后台）和 celery worker（前台）  <-- 默认
-#   ROLE=both       -> 启动 web（后台）并启动 celery worker（前台）
 # 可选环境变量：
-#   MIGRATE=true    -> 如果安装了 alembic，则在启动前运行数据库迁移（alembic upgrade head）
-#   WAIT_FOR=host:port -> 在启动前等待指定的 TCP 服务可达（可多次用逗号分隔）
-#   APP_PORT        -> web 服务端口，默认 5006
-#   CELERY_EXTRA_ARGS, CELERY_BEAT_EXTRA_ARGS -> 额外的 celery 参数
+#   CELERY_EXTRA_ARGS        -> 额外的 celery worker 参数
+#   CELERY_BEAT_EXTRA_ARGS   -> 额外的 celery beat 参数
 
 set -euo pipefail
 
@@ -22,32 +18,49 @@ err() { echo "[ERROR]   $*"; }
 
 start_celery_beat() {
   log "启动 celery beat"
-  BEAT_CMD=("-m" "celery" "-A" "celery_app" "beat" "-l" "info")
+  # Build the celery command with extra args if provided
+  local EXTRA_ARGS=()
   if [ -n "${CELERY_BEAT_EXTRA_ARGS:-}" ]; then
-    read -ra extra <<< "$CELERY_BEAT_EXTRA_ARGS"
-    BEAT_CMD=("-m" "celery" "-A" "celery_app" "beat" "-l" "info" "${extra[@]}")
+    read -ra EXTRA_ARGS <<< "$CELERY_BEAT_EXTRA_ARGS"
   fi
-  if [ -x "$VENV_PY" ]; then
-    "$VENV_PY" "${BEAT_CMD[@]}" &
+
+  # Prefer using `uv run` when available
+  if command -v uv >/dev/null 2>&1; then
+    CMD=("uv" "run" "celery" "-A" "celery_app" "beat" "-l" "info" ${EXTRA_ARGS[@]+"${EXTRA_ARGS[@]}"})
+  elif [ -x "$VENV_PY" ]; then
+    CMD=("$VENV_PY" "-m" "celery" "-A" "celery_app" "beat" "-l" "info" ${EXTRA_ARGS[@]+"${EXTRA_ARGS[@]}"})
   else
-    python "${BEAT_CMD[@]}" &
+    CMD=("python" "-m" "celery" "-A" "celery_app" "beat" "-l" "info" ${EXTRA_ARGS[@]+"${EXTRA_ARGS[@]}"})
   fi
+
+  # Log the exact command for debugging, then start in background
+  log "运行命令: ${CMD[*]}"
+  "${CMD[@]}" &
+  # Update global beat_pid variable
   beat_pid=$!
   log "celery beat pid=$beat_pid"
 }
 
 start_celery_worker() {
   log "启动 celery worker"
-  CELERY_CMD=("-m" "celery" "-A" "celery_app" "worker" "-l" "info")
+  # Build the celery worker command with extra args if provided
+  local EXTRA_ARGS=()
   if [ -n "${CELERY_EXTRA_ARGS:-}" ]; then
-    read -ra extra <<< "$CELERY_EXTRA_ARGS"
-    CELERY_CMD=("-m" "celery" "-A" "celery_app" "worker" "-l" "info" "${extra[@]}")
+    read -ra EXTRA_ARGS <<< "$CELERY_EXTRA_ARGS"
   fi
-  if [ -x "$VENV_PY" ]; then
-    "$VENV_PY" "${CELERY_CMD[@]}" &
+
+  if command -v uv >/dev/null 2>&1; then
+    CMD=("uv" "run" "celery" "-A" "celery_app" "worker" "-P" "gevent" "-l" "info" ${EXTRA_ARGS[@]+"${EXTRA_ARGS[@]}"})
+  elif [ -x "$VENV_PY" ]; then
+    CMD=("$VENV_PY" "-m" "celery" "-A" "celery_app" "worker" "-P" "gevent" "-l" "info" ${EXTRA_ARGS[@]+"${EXTRA_ARGS[@]}"})
   else
-    python "${CELERY_CMD[@]}" &
+    CMD=("python" "-m" "celery" "-A" "celery_app" "worker" "-P" "gevent" "-l" "info" ${EXTRA_ARGS[@]+"${EXTRA_ARGS[@]}"})
   fi
+
+  # Log the exact command for debugging, then start worker (foreground)
+  log "运行命令: ${CMD[*]}"
+  "${CMD[@]}" &
+  # Update global child_pid variable
   child_pid=$!
   log "celery worker pid=$child_pid"
   wait "$child_pid"
