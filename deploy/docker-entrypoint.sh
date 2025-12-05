@@ -20,17 +20,6 @@ log() { echo "[INFO]    $*"; }
 warn() { echo "[WARN]    $*"; }
 err() { echo "[ERROR]   $*"; }
 
-start_web() {
-  PORT=${APP_PORT:-5006}
-  log "启动 web 服务 (uvicorn) 在 0.0.0.0:${PORT}"
-  if [ -x "$VENV_PY" ]; then
-    exec "$VENV_PY" -m uvicorn app:app --host 0.0.0.0 --port "$PORT"
-  else
-    log "没有找到虚拟环境，尝试直接用系统 python"
-    exec python -m uvicorn app:app --host 0.0.0.0 --port "$PORT"
-  fi
-}
-
 start_celery_beat() {
   log "启动 celery beat"
   BEAT_CMD=("-m" "celery" "-A" "celery_app" "beat" "-l" "info")
@@ -89,9 +78,6 @@ ROLE=${ROLE:-celery}
 log "容器启动，ROLE=$ROLE"
 
 case "$ROLE" in
-  web)
-    start_web
-    ;;
   worker)
     start_celery_worker
     ;;
@@ -101,7 +87,7 @@ case "$ROLE" in
     start_celery_worker
     ;;
   *)
-    err "未知 ROLE: $ROLE. 支持的值: web | worker | celery | both"
+    err "未知 ROLE: $ROLE. 支持的值: worker | celery "
     exit 2
     ;;
 esac
