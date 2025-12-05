@@ -19,4 +19,8 @@ RUN  pip install uv \
     && uv venv \
     && uv sync --frozen --no-dev
 
-ENTRYPOINT [".venv/bin/python","-m","celery","-A","celery_app","worker","-P","gevent","-l","info"]
+# 复制并设置入口脚本
+COPY deploy/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

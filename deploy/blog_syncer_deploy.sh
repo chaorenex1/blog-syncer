@@ -62,6 +62,7 @@ mkdir -p "${LOG_HOST_DIR}"
 log "启动容器 ${CONTAINER_NAME}"
 docker run -d \
   --env-file .env \
+  -e ROLE=celery \
   --name "${CONTAINER_NAME}" \
   --restart unless-stopped \
   -p "${PORT}:${EXPOSED_PORT}" \
