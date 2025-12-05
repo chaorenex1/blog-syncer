@@ -93,6 +93,7 @@ def create_post(client: HaloClient, args: Dict[str, Any]) -> Optional[str]:
 
     except Exception as e:
         logger.error(f"创建文章出错：{e}", exc_info=True)
+        raise e
 
 class BlogSyncService:
     @staticmethod
