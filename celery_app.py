@@ -54,7 +54,7 @@ celery_app.conf.beat_schedule = {
     # },
     "blog_rag_rebuild": {
         "task": "scheduled.scheduled_tasks.blog_rag_retry",
-        "schedule": crontab(minute="*/5"),  # 每 5 分钟执行一次
+        "schedule": crontab(hour="*/1"),  # 每小时执行一次
     },
 }
 celery_app.conf.update(
