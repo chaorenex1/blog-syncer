@@ -6,6 +6,7 @@ from typing import Optional
 from halo_mcp_server.tools.post_tools import markdown_to_html
 from slugify import slugify
 
+from component.halo.aduib_ai import get_aduib_ai_client
 from component.halo.halo_client import HaloClient, get_halo_client
 from models import get_db
 from models.document import KnowledgeDocument
@@ -102,9 +103,11 @@ class BlogSyncService:
         logger.info("Starting blog synchronization...")
         halo_client_ = get_halo_client()
         with get_db() as session:
-                blog_list:list[KnowledgeDocument] = session.query(KnowledgeDocument).filter_by(push_status=0,
-                                                                                               rag_status='completed',
-                                                                                               rag_type='paragraph').all()
+                blog_list:list[KnowledgeDocument] = session.query(KnowledgeDocument).filter(KnowledgeDocument.push_status==0,
+                                                                                               KnowledgeDocument.rag_status=='completed',
+                                                                                               KnowledgeDocument.rag_type=='paragraph',
+                                                                                               KnowledgeDocument.push_count<3
+                                                                                               ).all()
                 for blog in blog_list:
                     try:
                         # Simulate synchronization process
@@ -119,6 +122,7 @@ class BlogSyncService:
                         })
                         # Update push_status to 1 (synchronized)
                         blog.push_status = 1
+                        blog.push_count=blog.push_count+1
                         blog.push_time=datetime.now()
                         session.add(blog)
                         session.commit()
@@ -126,3 +130,28 @@ class BlogSyncService:
                     except Exception as e:
                         logger.error(f"Error during blog synchronization: {e}")
                         session.rollback()
+
+    @staticmethod
+    def blog_rag_retry():
+        logger.info("Starting blog RAG Retry")
+        ai_client_ = get_aduib_ai_client()
+        try:
+            # Simulate synchronization process
+            logger.info(f"Retrying RAG for blog")
+            result = ai_client_.get(path="/v1/knowledge/rag/paragraph/retry")
+            logger.info(f"Blog RAG Retry completed successfully, result: {result}")
+        except Exception as e:
+            logger.error(f"Error during blog RAG Retry: {e}")
+
+
+    @staticmethod
+    def clean_knowledge_documents():
+        logger.info("Starting cleaning knowledge documents")
+        ai_client_ = get_aduib_ai_client()
+        try:
+            # Simulate synchronization process
+            logger.info(f"Cleaning knowledge documents")
+            result = ai_client_.get(path="/v1/knowledge/rag/paragraph/clean")
+            logger.info(f"Cleaning knowledge documents completed successfully, result: {result}")
+        except Exception as e:
+            logger.error(f"Error during cleaning knowledge documents: {e}")

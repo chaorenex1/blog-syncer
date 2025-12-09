@@ -1,3 +1,3 @@
-from .app_config import AduibAiConfig
+from .app_config import BlogSyncConfig
 
-config = AduibAiConfig()
+config = BlogSyncConfig()

@@ -32,6 +32,7 @@ class KnowledgeDocument(Base):
     token_count = Column(Integer, nullable=True, server_default=text("0"), comment="token count")
     push_status = Column(Integer, nullable=True, server_default=text("0"), comment="push status")
     push_time = Column(DateTime, nullable=True, comment="push time")
+    push_count = Column(Integer, nullable=True, server_default=text("0"), comment="push count")
 
     __table_args__ = (
         Index("idx_knowledge_document_content", func.to_tsvector(text("'jieba_cfg'"), content), postgresql_using="gin"),

@@ -46,12 +46,16 @@ celery_app.conf.update(
 celery_app.conf.beat_schedule = {
     "daily_blog_sync": {
         "task": "scheduled.scheduled_tasks.blog_sync",
-        "schedule": crontab(minute="*/2"),  # 每 5 分钟执行一次
+        "schedule": crontab(minute="*/2"),  # 每 2 分钟执行一次
     },
-    # "print_time": {
-    #     "task": "scheduled.scheduled_tasks.print_time",
-    #     "schedule": crontab(minute="*/1"),  # 每 5 分钟执行一次
+    # "clean_knowledge_documents": {
+    #     "task": "scheduled.scheduled_tasks.clean_knowledge_documents",
+    #     "schedule": crontab(minute="*/2"),
     # },
+    "blog_rag_rebuild": {
+        "task": "scheduled.scheduled_tasks.blog_rag_retry",
+        "schedule": crontab(minute="*/5"),  # 每 5 分钟执行一次
+    },
 }
 celery_app.conf.update(
     imports=["scheduled.scheduled_tasks"]

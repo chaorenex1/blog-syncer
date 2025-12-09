@@ -4,6 +4,7 @@ from typing import Any
 from pydantic.fields import FieldInfo
 from pydantic_settings import SettingsConfigDict, BaseSettings, PydanticBaseSettingsSource
 
+from .aduib_ai import AduibAiConfig
 from .cache.redis_config import RedisConfig
 from .db import DBConfig
 from .deploy import DeploymentConfig, AuthConfig, MCPConfig
@@ -52,7 +53,7 @@ class RemoteSettingsSourceFactory(PydanticBaseSettingsSource):
         return self.config_source.get_field_value(field, field_name)
 
 
-class AduibAiConfig(
+class BlogSyncConfig(
     DeploymentConfig,
     AuthConfig,
     MCPConfig,
@@ -61,7 +62,8 @@ class AduibAiConfig(
     RedisConfig,
     RemoteSettingsSourceConfig,
     DiscoveryConfig,
-    HaloConfig
+    HaloConfig,
+    AduibAiConfig
 ):
     model_config = SettingsConfigDict(
         # Use top level .env file (one level above ./aduib_ai/)
