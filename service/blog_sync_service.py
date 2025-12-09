@@ -102,27 +102,27 @@ class BlogSyncService:
         logger.info("Starting blog synchronization...")
         halo_client_ = get_halo_client()
         with get_db() as session:
-            try:
                 blog_list:list[KnowledgeDocument] = session.query(KnowledgeDocument).filter_by(push_status=0,
                                                                                                rag_status='completed',
                                                                                                rag_type='paragraph').all()
                 for blog in blog_list:
-                    # Simulate synchronization process
-                    logger.info(f"Synchronizing blog: {blog.title}")
-                    create_post(halo_client_,{
-                        "title": blog.title if len(blog.title)>=0 else blog.content[:20],
-                        "content": blog.content,
-                        "content_format": "MARKDOWN",
-                        "tags": [],
-                        "categories": [],
-                        "publish_immediately": True
-                    })
-                    # Update push_status to 1 (synchronized)
-                    blog.push_status = 1
-                    blog.push_time=datetime.now()
-                    session.add(blog)
-                session.commit()
-                logger.info("Blog synchronization completed successfully.")
-            except Exception as e:
-                logger.error(f"Error during blog synchronization: {e}")
-                session.rollback()
+                    try:
+                        # Simulate synchronization process
+                        logger.info(f"Synchronizing blog: {blog.title}")
+                        create_post(halo_client_,{
+                            "title": blog.title if len(blog.title)>=0 else blog.content[:20],
+                            "content": blog.content,
+                            "content_format": "MARKDOWN",
+                            "tags": [],
+                            "categories": [],
+                            "publish_immediately": True
+                        })
+                        # Update push_status to 1 (synchronized)
+                        blog.push_status = 1
+                        blog.push_time=datetime.now()
+                        session.add(blog)
+                        session.commit()
+                        logger.info("Blog synchronization completed successfully.")
+                    except Exception as e:
+                        logger.error(f"Error during blog synchronization: {e}")
+                        session.rollback()
