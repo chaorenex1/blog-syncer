@@ -48,10 +48,10 @@ celery_app.conf.beat_schedule = {
         "task": "scheduled.scheduled_tasks.blog_sync",
         "schedule": crontab(minute="*/2"),  # 每 5 分钟执行一次
     },
-    "print_time": {
-        "task": "scheduled.scheduled_tasks.print_time",
-        "schedule": crontab(minute="*/1"),  # 每 5 分钟执行一次
-    },
+    # "print_time": {
+    #     "task": "scheduled.scheduled_tasks.print_time",
+    #     "schedule": crontab(minute="*/1"),  # 每 5 分钟执行一次
+    # },
 }
 celery_app.conf.update(
     imports=["scheduled.scheduled_tasks"]

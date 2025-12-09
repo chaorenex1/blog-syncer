@@ -22,9 +22,9 @@ def blog_sync():
     return now.isoformat()
 
 
-@celery_app.task
-def print_time():
-    """打印当前时间（供 Celery 定时任务调用）。"""
-    now = datetime.now()
-    # 使用 ISO 格式输出本地时间
-    print(f"[scheduled_tasks.print_time] current time: {now.isoformat()}")
+# @celery_app.task
+# def print_time():
+#     """打印当前时间（供 Celery 定时任务调用）。"""
+#     now = datetime.now()
+#     # 使用 ISO 格式输出本地时间
+#     print(f"[scheduled_tasks.print_time] current time: {now.isoformat()}")
