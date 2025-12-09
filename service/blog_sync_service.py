@@ -110,7 +110,7 @@ class BlogSyncService:
                         # Simulate synchronization process
                         logger.info(f"Synchronizing blog: {blog.title}")
                         create_post(halo_client_,{
-                            "title": blog.title if len(blog.title)>=0 else blog.content[:20],
+                            "title": blog.title,
                             "content": blog.content,
                             "content_format": "MARKDOWN",
                             "tags": [],
