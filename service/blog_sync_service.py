@@ -105,7 +105,7 @@ class BlogSyncService:
             try:
                 blog_list:list[KnowledgeDocument] = session.query(KnowledgeDocument).filter_by(push_status=0,
                                                                                                rag_status='completed',
-                                                                                               doc_from='web_memo').all()
+                                                                                               rag_type='paragraph').all()
                 for blog in blog_list:
                     # Simulate synchronization process
                     logger.info(f"Synchronizing blog: {blog.title}")
